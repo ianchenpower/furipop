@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FuriPop</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <span class="icon">✨</span>
+      <span class="title">FuriPop</span>
+    </div>
+    <span class="badge">X 專用版</span>
+  </div>
+
+  <div class="content">
+    <div class="setting-item">
+      <div class="setting-info">
+        <span class="label">推特懸停標音</span>
+        <span class="subtext">滑鼠移至日文漢字浮現讀音</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggle-enabled" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="preview-box">
+      <div class="preview-title">體驗預覽：</div>
+      <div class="preview-text">
+        滑鼠移過試試看：
+        <span class="furipop-ruby preview-ruby" data-furigana="せんぱい">先輩</span>、
+        <span class="furipop-ruby preview-ruby" data-furigana="えし">絵師</span>、
+        <span class="furipop-ruby preview-ruby" data-furigana="だいじょうぶ">大丈夫</span>！
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="status-indicator">
+      <span class="dot"></span>
+      <span id="status-text">已在 X (Twitter) 就緒</span>
+    </div>
+    <a href="https://x.com" target="_blank" class="launch-btn">前往 X.com</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

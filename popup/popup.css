@@ -1,0 +1,199 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 290px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #0f1419;
+  color: #e7e9ea;
+  padding: 14px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2f3336;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logo .icon {
+  font-size: 16px;
+}
+
+.logo .title {
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+  color: #1d9bf0;
+}
+
+.badge {
+  font-size: 11px;
+  background: rgba(29, 155, 240, 0.15);
+  color: #1d9bf0;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.content {
+  padding: 14px 0;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.setting-info .label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.setting-info .subtext {
+  display: block;
+  font-size: 11px;
+  color: #71767b;
+  margin-top: 2px;
+}
+
+/* Switch toggle */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #333639;
+  transition: 0.25s ease;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s ease;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #1d9bf0;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Preview box */
+.preview-box {
+  background: #16181c;
+  border: 1px solid #2f3336;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.preview-title {
+  font-size: 11px;
+  color: #71767b;
+  margin-bottom: 6px;
+}
+
+.preview-text {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Preview Hover Ruby */
+.preview-ruby {
+  position: relative;
+  cursor: pointer;
+  color: #1d9bf0;
+  font-weight: 600;
+  border-bottom: 1px dashed rgba(29, 155, 240, 0.5);
+}
+
+.preview-ruby:hover::after {
+  content: attr(data-furigana);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: #1d9bf0;
+  color: #ffffff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #2f3336;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #00ba7c;
+}
+
+.status-indicator .dot {
+  width: 6px;
+  height: 6px;
+  background-color: #00ba7c;
+  border-radius: 50%;
+}
+
+.launch-btn {
+  font-size: 11px;
+  color: #1d9bf0;
+  text-decoration: none;
+  border: 1px solid rgba(29, 155, 240, 0.4);
+  padding: 3px 8px;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.launch-btn:hover {
+  background: rgba(29, 155, 240, 0.1);
+}
