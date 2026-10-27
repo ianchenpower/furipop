@@ -1,80 +1,22 @@
-/* FuriPop Twitter Content Style */
-
-/* 標記出來的漢字單詞 */
-.furipop-ruby {
-  position: relative;
-  display: inline;
-  cursor: pointer;
-  border-bottom: 1.5px dotted rgba(29, 155, 240, 0.55);
-  transition: border-color 0.2s, background-color 0.2s;
-  border-radius: 2px;
+/* A fixed overlay never affects X line height or React-owned tweet content. */
+#furipop-tooltip {
+ all: initial;
+ position: fixed;
+ display: block;
+ box-sizing: border-box;
+ max-width: min(460px, calc(100vw - 16px));
+ max-height: min(260px, calc(100vh - 16px));
+ overflow: hidden;
+ overflow-wrap: anywhere;
+ white-space: pre-wrap;
+ padding: 8px 12px;
+ border: 1px solid #1d9bf0;
+ border-radius: 9px;
+ background: #101820;
+ color: #a9dfff;
+ font: 600 14px/1.65 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Meiryo', sans-serif;
+ box-shadow: 0 4px 18px #0006;
+ pointer-events: none;
+ z-index: 2147483647;
 }
-
-/* 滑鼠懸停時微亮 */
-.furipop-ruby:hover {
-  background-color: rgba(29, 155, 240, 0.1);
-  border-bottom-color: #1d9bf0;
-}
-
-/* 懸浮平假名氣泡框 */
-.furipop-ruby:hover::after {
-  content: attr(data-furigana);
-  position: absolute;
-  bottom: calc(100% + 5px);
-  left: 50%;
-  transform: translateX(-50%);
-  
-  /* 視覺樣式：推特風格半透明黑底 + 亮藍/白色假名 */
-  background: rgba(15, 20, 25, 0.95);
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Meiryo", sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1;
-  padding: 3px 6px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 999999;
-  
-  /* 進場微動畫 */
-  animation: furipop-bubble-in 0.12s ease-out;
-}
-
-/* 氣泡下方小三角箭頭 */
-.furipop-ruby:hover::before {
-  content: "";
-  position: absolute;
-  bottom: calc(100% + 1px);
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 4px 4px 0 4px;
-  border-style: solid;
-  border-color: rgba(15, 20, 25, 0.95) transparent transparent transparent;
-  pointer-events: none;
-  z-index: 999999;
-  animation: furipop-bubble-in 0.12s ease-out;
-}
-
-/* 動畫定義 */
-@keyframes furipop-bubble-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(3px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-/* 全域停用樣式 */
-body.furipop-disabled .furipop-ruby {
-  border-bottom: none !important;
-}
-body.furipop-disabled .furipop-ruby:hover::after,
-body.furipop-disabled .furipop-ruby:hover::before {
-  display: none !important;
-}
+#furipop-tooltip[hidden] {display: none !important;}

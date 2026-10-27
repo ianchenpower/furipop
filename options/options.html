@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FuriPop 自訂讀音</title><link rel="stylesheet" href="options.css"></head>
+<body><main><header><span>FuriPop · v0.2.4</span><h1>讓你熟悉的名字，讀對一次就記住</h1><p>為人名、VTuber 名稱和新詞指定讀音。自訂詞會優先於內建詞典，套用到所有開啟的 X 分頁。</p></header>
+<form id="dictionary-form"><div class="fields"><label>名字或詞彙<input id="word" maxlength="80" required placeholder="例如：星街すいせい" autocomplete="off"></label><label>完整讀音<input id="reading" maxlength="120" required placeholder="例如：ほしまちすいせい" autocomplete="off"></label></div><p class="hint">平假名、片假名皆可；儲存時統一為平假名。相同詞彙會更新讀音。相同名字的讀法會套用到所有句子，建議填完整姓名以避免誤判。</p><button id="save" type="submit" disabled>儲存讀音</button></form>
+<p id="status" role="status" aria-live="polite">正在讀取詞典…</p>
+<section aria-labelledby="saved-title"><h2 id="saved-title">我的詞典 <small id="count"></small></h2><p id="empty">尚未新增詞彙。遇到讀錯的名字時，可以回來補上。</p><div class="table-wrap"><table id="table" hidden><thead><tr><th>詞彙</th><th>讀音</th><th>操作</th></tr></thead><tbody id="entries"></tbody></table></div></section>
+<footer>詞典透過 Chrome 同步儲存，最多 100 詞，總容量約 6 KB。推文仍只在本機分析。自訂讀音是你指定的修正，並非系統查證結果。</footer></main><script src="../engine/dictionary.js"></script><script src="options.js"></script></body></html>

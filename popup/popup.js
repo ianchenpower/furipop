@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateStatus(enabled) {
     if (enabled) {
-      statusText.textContent = "已在 X (Twitter) 就緒";
+      statusText.textContent = "X 讀音助手已啟用";
       statusText.style.color = "#00ba7c";
     } else {
       statusText.textContent = "外掛已暫停";
@@ -37,3 +37,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
+document.getElementById('open-dictionary').addEventListener('click',()=>chrome.runtime.openOptionsPage());
