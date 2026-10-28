@@ -87,17 +87,6 @@ Kuromoji 的接法依據官方專案：https://github.com/takuyaa/kuromoji.js �
 
 ---
 
-## 🤖 給接棒 AI 工程師的交接文檔 (AI Handoff Blueprint)
-
-> **致接棒工程師 / AI Agent：**  
-> 請在動工前仔細閱讀本段落。本專案經過產品與技術的深度收斂，旨在打造一個「體驗極致、具有話題性與小額變現潛力」的輕量擴充功能。請勿擅自擴大範圍至全網漫無目的的通用標音。
-
-### 📌 產品核心原則 (Product Guardrails)
-1. **細而精，拒絕廣而不精**：只深度適配 **X (Twitter)** 與 **YouTube** 兩大娛樂/次文化高頻平台，其他網站僅以選取（Selection）模式保底。
-2. **零破版原則**：絕對不能為了顯示 `<ruby>` 而撐開推特原生行距（Line-height）。一律採用 CSS 懸停氣泡（Hover Tooltip）或反白浮層。
-3. **安全注入**：現代 SPA（React/Virtual DOM）對 DOM 竄改極度敏感，嚴格禁止粗暴覆蓋父層節點。
-
----
 
 ## 📂 專案現狀與架構 (v0.1.1)
 
