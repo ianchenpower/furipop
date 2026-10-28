@@ -127,32 +127,7 @@ furipop/
 
 ---
 
-## 🎯 接棒 AI 的核心任務清單 (Next Tasks)
 
-請下一個接棒的工程師 / AI 依序推進以下任務：
-
-### 任務一：升級自然語言形態素分析引擎 (最優先)
-* **現狀問題**：目前依賴 `BUILTIN_DICT` 寫死的高頻次文化詞庫，遇到未收錄的任意日文長句無法自動分詞。
-* **技術要求**：
-  - 整合動態日文分詞庫（如 Kuromoji.js 或 WebAssembly 版分詞器）。
-  - **避坑警告**：Kuromoji 辭典檔高達 20MB。**切勿**直接在每個 Content Script 冷啟動時阻塞讀取！建議方案：
-    1. 採用 Web Worker 或 IndexedDB 進行分詞快取。
-    2. 或先預加載 500~1000 個推特最常用漢字訓讀/音讀規則表，未命中再非同步查詢。
-
-### 任務二：設計 YouTube CC 字幕覆蓋層 (Roadmap v0.3.0)
-* **場景**：J-POP MV 歌詞、動漫歌曲、VTuber 直播字幕。
-* **技術要求**：
-  - **避坑警告**：YouTube 官方播放器每幾十毫秒會重構 `.ytp-caption-segment`。**絕對不要**修改原生字幕的 innerHTML，否則會瘋狂閃爍崩潰。
-  - **正確解法**：用 CSS 將 YouTube 原生字幕隱藏（`opacity: 0`），在播放器上方建立外掛自屬的 `div.furipop-yt-caption-overlay`，抓取字幕文字後即時渲染標音。
-
-### 任務三：設定頁面 (Options Page) 與使用者自訂詞典
-* 提供設定頁，讓使用者能自行新增專屬名詞（如某個 VTuber 名字、繪師自創詞）及其對應假名，並保存在 `chrome.storage.sync`。
-
-### 任務四：商業變現與推廣準備 (Freemium 模式)
-* 核心標音功能保持 100% 免費，累積口碑。
-* 規劃進階買斷功能（例如：「一鍵將選取的單字匯出成 Anki 記憶卡 CSV」）。
-
----
 
 ## ⚠️ 已知技術地雷與踩坑紀錄 (Gotchas & Warnings)
 
