@@ -27,7 +27,7 @@ const root=path.resolve(__dirname,'..');
   const readingStyle=await overlay.locator('ruby rt').first().evaluate(e=>({background:getComputedStyle(e).backgroundColor,color:getComputedStyle(e).color}));
   assert.equal(readingStyle.background,'rgba(0, 0, 0, 0.85)');assert.equal(readingStyle.color,'rgb(255, 255, 255)');
   assert.equal((await overlay.locator('ruby rt').allTextContents()).join('|'),'きょう|としょかん|いく');
-  assert.equal(await overlay.evaluate(e=>getComputedStyle(e).pointerEvents),'none');
+  assert.equal(await overlay.evaluate(e=>getComputedStyle(e).pointerEvents),'auto');
   const alignment=await page.evaluate(()=>{const src=document.querySelector('.ytp-caption-segment').firstChild,base=document.querySelector('#furipop-yt-caption-overlay ruby').firstChild;function top(node){const r=document.createRange();r.setStart(node,0);r.setEnd(node,1);return r.getBoundingClientRect().top;}return {native:top(src),overlay:top(base)};});
   assert.ok(Math.abs(alignment.native-alignment.overlay)<3,'annotated text should follow the native caption baseline: '+JSON.stringify(alignment));
   // Player width can change through layout alone, without a window resize.
@@ -51,12 +51,21 @@ const root=path.resolve(__dirname,'..');
   }
   await page.evaluate(()=>document.querySelector('.ytp-caption-segment').style.fontSize='24px');
   await page.waitForFunction(()=>getComputedStyle(document.querySelector('#furipop-yt-caption-overlay')).fontSize==='24px');
-  // Simulate a native draggable caption window: overlay must pass the pointer
-  // through and follow the window's actual moved geometry.
-  await page.evaluate(()=>{const w=document.querySelector('.caption-window');let origin=null;w.addEventListener('pointerdown',e=>{origin={x:e.clientX,y:e.clientY};w.setPointerCapture(e.pointerId);});w.addEventListener('pointermove',e=>{if(origin)w.style.transform='translate('+(e.clientX-origin.x)+'px,'+(e.clientY-origin.y)+'px)';});w.addEventListener('pointerup',()=>{origin=null;});});
-  const dragBox=await page.locator('.ytp-caption-segment').boundingBox();const beforeDrag=await overlay.boundingBox();
-  await page.mouse.move(dragBox.x+dragBox.width-5,dragBox.y+dragBox.height/2);await page.mouse.down();await page.mouse.move(dragBox.x+dragBox.width+35,dragBox.y+dragBox.height/2-20,{steps:4});await page.mouse.up();
+  // Drag the visible caption itself, including outside the native hitbox.
+  const beforeDrag=await overlay.boundingBox();
+  await page.mouse.move(beforeDrag.x+beforeDrag.width/2,beforeDrag.y+beforeDrag.height/2);await page.mouse.down();await page.mouse.move(beforeDrag.x+beforeDrag.width/2+40,beforeDrag.y+beforeDrag.height/2-20,{steps:4});await page.mouse.up();
   await page.waitForFunction(x=>document.querySelector('#furipop-yt-caption-overlay').getBoundingClientRect().left>x+25,beforeDrag.x);
+  const moved=await overlay.boundingBox();assert.ok(moved.y<beforeDrag.y-10,'visible caption should move vertically');
+  await page.mouse.move(moved.x+moved.width/2,moved.y+moved.height/2);await page.mouse.down();await page.mouse.move(moved.x+moved.width/2+30,moved.y+moved.height/2-10,{steps:3});await page.mouse.up();
+  await page.waitForFunction(x=>document.querySelector('#furipop-yt-caption-overlay').getBoundingClientRect().left>x+20,moved.x);
+  const movedAgain=await overlay.boundingBox();
+  await page.evaluate(()=>document.querySelector('.ytp-caption-segment').textContent='明日は学校へ行く。');
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('#furipop-yt-caption-overlay ruby rt')).map(x=>x.textContent).join('|')==='あした|がっこう|いく');
+  assert.ok(Math.abs((await overlay.boundingBox()).x-movedAgain.x)<30,'drag offset should remain for the next caption');
+  await page.evaluate(()=>document.querySelector('.ytp-caption-segment').textContent='今日は図書館へ行く。');
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('#furipop-yt-caption-overlay ruby rt')).map(x=>x.textContent).join('|')==='きょう|としょかん|いく');
+  await page.evaluate(()=>document.dispatchEvent(new Event('yt-navigate-finish')));
+  await page.waitForFunction(()=>{const o=document.querySelector('#furipop-yt-caption-overlay');if(!o?.querySelector('rt'))return false;const s=document.querySelector('.ytp-caption-segment').getBoundingClientRect(),b=o.getBoundingClientRect();return Math.abs((s.left+s.right-b.left-b.right)/2)<3;},{},{timeout:5000});
   await page.evaluate(()=>document.querySelector('#control').addEventListener('click',()=>document.querySelector('#movie_player').requestFullscreen()));
   await page.locator('#control').click();await page.waitForFunction(()=>document.fullscreenElement?.id==='movie_player');
   assert.equal(await overlay.locator('ruby rt').count(),3);
@@ -116,7 +125,7 @@ const root=path.resolve(__dirname,'..');
   await page.waitForFunction(()=>{const o=document.querySelector('#furipop-yt-caption-overlay');if(!o)return false;const copy=o.cloneNode(true);copy.querySelectorAll('rt').forEach(n=>n.remove());return copy.textContent==='明日は学校へ行く。14'&&o.querySelectorAll('ruby rt').length===3;},{},{timeout:5000});
   const afterBurst=(await cdp.send('Runtime.evaluate',{contextId:world.id,expression:'captionCalls.length',returnByValue:true})).result.value;
   assert.ok(afterBurst-beforeBurst<=2,'rapid caption revisions must be coalesced; requests='+String(afterBurst-beforeBurst));
-  assert.deepEqual(errors,[]);console.log('PASS: YouTube title, description, comments, caption automatic ruby/update, native drag, YouTube styles, no stale text, native fallback, toggle and non-Japanese captions');
+  assert.deepEqual(errors,[]);console.log('PASS: YouTube title, description, comments, caption automatic ruby/update, overlay drag, YouTube styles, no stale text, native fallback, toggle and non-Japanese captions');
  }finally{await ctx.close();}
  }finally{await fs.rm(profile,{recursive:true,force:true,maxRetries:3});}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -3,14 +3,16 @@ let ready;
 const cache=new Map();
 const han=/[\p{Script=Han}々〆ヶ]/u;
 // Only curated proper nouns/slang override contextual dictionary readings.
-const overrides=Object.fromEntries(Object.entries(self.FURIPOP_OVERRIDES).filter(([s])=>['一回','野獣先輩','野獸先輩','神絵師','神畫師','絵師','畫師','画師','鍵垢','本垢','裏垢','推し','神回','學校','應援','發售','預約'].includes(s)));
+const overrides=Object.fromEntries(Object.entries(self.FURIPOP_OVERRIDES).filter(([s])=>['一回','今日中','星街すいせい','野獣先輩','野獸先輩','神絵師','神畫師','絵師','畫師','画師','鍵垢','本垢','裏垢','推し','神回','學校','應援','發售','預約'].includes(s)));
 let activeOverrides=overrides;
+let customKeys=new Set();
 let keys=Object.keys(overrides).sort((a,b)=>b.length-a.length);
 let dictionaryKey='[]';
 function configure(entries=[]){
  const normalized=FuriPopDictionary.normalize(entries);const next=JSON.stringify(normalized);
  if(next===dictionaryKey)return;
  dictionaryKey=next;cache.clear();
+ customKeys=new Set(normalized.map(e=>e.word));
  activeOverrides={...overrides,...Object.fromEntries(normalized.map(e=>[e.word,e.reading]))};
  keys=Object.keys(activeOverrides).sort((a,b)=>b.length-a.length);
 }
@@ -21,7 +23,11 @@ async function analyze(text){
  if(cache.has(text)){const value=cache.get(text);cache.delete(text);cache.set(text,value);return value;}
  const tokenizer=await getTokenizer();const result=[];let cursor=0;
  function segment(s,base){let offset=0;for(const t of tokenizer.tokenize(s)){const surface=t.surface_form;const start=s.indexOf(surface,offset);if(start<0)continue;if(start>offset)result.push({surface:s.slice(offset,start),start:base+offset,end:base+start});const reading=t.reading && t.reading!=='*'?hira(t.reading):null;result.push({surface,start:base+start,end:base+start+surface.length,reading:han.test(surface)?reading:null,unknown:han.test(surface)&&!reading});offset=start+surface.length;}if(offset<s.length)result.push({surface:s.slice(offset),start:base+offset,end:base+s.length});}
- while(cursor<text.length){let at=text.length,key=null;for(const k of keys){const n=text.indexOf(k,cursor);if(n>=0&&n<at){at=n;key=k;}}if(at>cursor)segment(text.slice(cursor,at),cursor);if(!key)break;result.push({surface:key,start:at,end:at+key.length,reading:activeOverrides[key],custom:!Object.hasOwn(overrides,key)||activeOverrides[key]!==overrides[key]});cursor=at+key.length;}
+ while(cursor<text.length){let at=text.length,key=null;const customStarts=[...customKeys].map(k=>text.indexOf(k,cursor)).filter(n=>n>=0);for(const k of keys){const n=text.indexOf(k,cursor);if(n<0)continue;if(!customKeys.has(k)&&customStarts.some(c=>c>n&&c<n+k.length))continue;if(n<at||(n===at&&customKeys.has(k)&&!customKeys.has(key))){at=n;key=k;}}if(at>cursor)segment(text.slice(cursor,at),cursor);if(!key)break;result.push({surface:key,start:at,end:at+key.length,reading:activeOverrides[key],custom:customKeys.has(key)});cursor=at+key.length;}
+ // In this established phrase 獣 is read けもの. Keep the correction
+ // contextual and do not override an explicitly configured user reading.
+ for(const token of result){if(!token.custom&&token.surface==='獣'&&text.slice(Math.max(0,token.start-2),token.start)==='蠢く')token.reading='けもの';}
+ for(let i=0;i+1<result.length;i++){const a=result[i],b=result[i+1];if(!a.custom&&!b.custom&&['一','二'].includes(a.surface)&&b.surface==='人'&&a.end===b.start&&text.slice(b.end,b.end+1)==='で'){result.splice(i,2,{surface:a.surface+'人',start:a.start,end:b.end,reading:a.surface==='一'?'ひとり':'ふたり'});}}
  cache.set(text,result);if(cache.size>300)cache.delete(cache.keys().next().value);return result;
 }
 let queue=Promise.resolve();

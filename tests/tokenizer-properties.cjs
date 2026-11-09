@@ -69,9 +69,11 @@ function assertStructure(text,tokens,label){
  tokens=await tokenize(sample,changed);assertStructure(sample,tokens,'custom change');cases++;
  assert.equal(tokens[0].surface,'星街すいせい');assert.equal(tokens[0].reading,'すいせい');
  tokens=await tokenize(sample,[]);assertStructure(sample,tokens,'custom delete');cases++;
- assert.notEqual(tokens[0].surface,'星街すいせい');
+ assert.equal(tokens[0].reading,'ほしまちすいせい','deleting custom entry restores built-in reading');
  // Re-add then delete proves cache state cannot resurrect a stale custom analysis.
  tokens=await tokenize(sample,[{word:'星街すいせい',reading:'ほしまちすいせい'}]);assert.equal(tokens[0].reading,'ほしまちすいせい');cases++;
- tokens=await tokenize(sample,[]);assert.notEqual(tokens[0].surface,'星街すいせい');cases++;
+ tokens=await tokenize(sample,[]);assert.equal(tokens[0].reading,'ほしまちすいせい');cases++;
+ tokens=await tokenize(sample,[{word:'星街',reading:'ほしがい'}]);assert.equal(tokens[0].surface,'星街');assert.equal(tokens[0].reading,'ほしがい','explicit shorter custom name must beat built-in name at the same position');cases++;
+ tokens=await tokenize('野獣先輩',[{word:'先輩',reading:'せんぱいさん'}]);assertStructure('野獣先輩',tokens,'custom inside builtin');assert.ok(tokens.some(t=>t.surface==='先輩'&&t.reading==='せんぱいさん'),'custom word inside built-in must take priority');cases++;
  console.log(`PASS: ${cases} deterministic tokenizer property cases; exact surfaces and UTF-16 offsets verified; custom longest match/add/change/delete cache behavior verified.`);
 })().catch(e=>{console.error(e);process.exitCode=1;});

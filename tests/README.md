@@ -28,9 +28,10 @@ node tests/run.cjs --browser
 - popup.cjs：驗證開關成功儲存、寫入失敗時恢復舊值與顯示錯誤。
 - youtube-flicker.cjs：驗證逐字字幕保留既有假名、持續輸入期間補充讀音、短暫漢字過渡、來源重建、長時間空字幕清除及語言變更。
 - youtube-alignment.cjs：測試模擬雙行字幕在不同字級的原文位置對齊。
-- youtube.cjs：驗證標題、資訊欄、留言、連結、字幕背景、拖移、字型、快速換句合併、字幕自動標音、停用回退及中日混合分區。
-- japanese-readings.cjs：19 個常見讀音／活用示例及未知字回退；僅為回歸範例，不代表完整詞典正確率。
+- youtube.cjs：驗證標題、資訊欄、留言、連結、字幕背景、直接拖動覆蓋字幕與換句保留位置、字型、快速換句合併、字幕自動標音、停用回退及中日混合分區。
+- japanese-readings.cjs：27 個常見讀音／活用、人名、同字異讀及中日混合示例，並檢查未知字回退與 UTF-16 offsets；僅為人工挑選的回歸範例，不代表完整詞典正確率或人名讀音涵蓋度。
 - 原有 tokenizer/language/offscreen/options/extension-lifecycle/content-interaction/worker-recovery 七組回歸繼續執行。
+- content-interaction.cjs 另驗證長篇選取結果可捲動、狀態訊息有 aria-live、浮窗可聚焦及 Escape 關閉。
 
 ## 日後修改流程
 

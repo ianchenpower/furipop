@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FuriPop - X 與 YouTube 日文假名助手",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "在 X 與 YouTube 懸停日文漢字查看讀音。",
   "permissions": [
     "storage",

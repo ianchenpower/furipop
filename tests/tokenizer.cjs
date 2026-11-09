@@ -53,7 +53,7 @@ const samples=[
  assert.equal(messages.at(-1).tokens[0].reading,'すいせい');
  context.onmessage({data:{id:102,text:'星街すいせいを見る',dictionary:[]}});
  await vm.runInContext('queue',context);
- assert.notEqual(messages.at(-1).tokens[0].surface,'星街すいせい');
+ assert.equal(messages.at(-1).tokens[0].reading,'ほしまちすいせい','deleting custom reading restores built-in reading');
  assert.throws(()=>context.FuriPopDictionary.normalize([{word:'名前',reading:'abc'}]));
  assert.throws(()=>context.FuriPopDictionary.normalize([{word:'名前',reading:'なまえ'},{word:'名前',reading:'めい'}]));
  assert.throws(()=>context.FuriPopDictionary.normalize(Array.from({length:101},(_,i)=>({word:'名'+i,reading:'な'}))));

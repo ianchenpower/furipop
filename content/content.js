@@ -29,7 +29,7 @@ function watchAnchor(container,range,mode){
 }
 function show(text,rect){
  if(!enabled || !rect || (!rect.width&&!rect.height))return;
- if(!tip){tip=document.createElement('div');tip.id='furipop-tooltip';tip.setAttribute('role','tooltip');}
+ if(!tip){tip=document.createElement('div');tip.id='furipop-tooltip';tip.setAttribute('role','status');tip.setAttribute('aria-live','polite');tip.setAttribute('aria-atomic','true');tip.tabIndex=0;}
  const tooltipRoot=document.fullscreenElement||document.documentElement;
  if(tip.parentNode!==tooltipRoot)tooltipRoot.append(tip);
  tip.textContent=text;tip.hidden=false;
@@ -142,16 +142,18 @@ async function selection(){
  }catch(e){if(request===epoch)showError(e,rect);}
 }
 document.addEventListener('pointermove',e=>{
+ if(tip?.contains(e.target)){clearTimeout(timer);return;}
  if(!enabled||window.getSelection()?.toString().trim())return;
  clearTimeout(timer);
  if(active?.mode==='hover'&&active.container.isConnected&&hitRect(active.range,e.clientX,e.clientY))return;
- hide();timer=setTimeout(()=>hover(e.clientX,e.clientY),100);
+ // Leave a short bridge across the gap between the source and the tooltip.
+ timer=setTimeout(()=>hover(e.clientX,e.clientY),250);
 },{passive:true});
-document.addEventListener('selectionchange',()=>{clearTimeout(timer);hide();timer=setTimeout(selection,180);});
-document.addEventListener('pointerdown',()=>{clearTimeout(timer);hide();});
+document.addEventListener('selectionchange',()=>{const s=window.getSelection();if(tip&&!tip.hidden&&(tip.contains(s?.anchorNode)||tip.contains(s?.focusNode)))return;clearTimeout(timer);hide();timer=setTimeout(selection,180);});
+document.addEventListener('pointerdown',e=>{if(tip?.contains(e.target))return;clearTimeout(timer);hide();});
 document.addEventListener('pointerout',e=>{if(!e.relatedTarget){clearTimeout(timer);hide();}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){clearTimeout(timer);hide();}});
-window.addEventListener('scroll',()=>{clearTimeout(timer);hide();},{capture:true,passive:true});
+window.addEventListener('scroll',e=>{if(tip?.contains(e.target))return;clearTimeout(timer);hide();},{capture:true,passive:true});
 window.addEventListener('resize',hide);
 function setEnabled(value){enabled=!!value;clearTimeout(timer);hide();}
 function updateCustom(entries){customWords=Array.isArray(entries)?entries.filter(e=>typeof e?.word==='string'&&typeof e?.reading==='string').map(e=>e.word.trim()).filter(Boolean):[];}

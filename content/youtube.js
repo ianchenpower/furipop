@@ -2,6 +2,7 @@
 (()=>{
 'use strict';
 let enabled=false,player=null,source=null,overlay=null,frame=0,last='',requested='',requestedLanguage='',tokens=null,generation=0,renderedGeneration=-1,analysisTimer=0,analysisMaxTimer=0,analysisEpoch=0,acceptedRequest=0,fallbackTimer=0,fallbackText='',missingTimer=0;
+let dragX=0,dragY=0,drag=null;
 const observer=new MutationObserver(()=>{
  // Once bound, caption changes are handled by the local observer, so ordinary
  // comments and recommendation churn need no repeated player work.
@@ -15,7 +16,7 @@ function clear(){
  if(analysisTimer){clearTimeout(analysisTimer);analysisTimer=0;}
  if(analysisMaxTimer){clearTimeout(analysisMaxTimer);analysisMaxTimer=0;}analysisEpoch++;
  if(player?.classList.contains('furipop-yt-active'))player.classList.remove('furipop-yt-active');
- if(overlay)overlay.remove();overlay=null;last='';requested='';requestedLanguage='';tokens=null;renderedGeneration=-1;generation++;
+ if(overlay)overlay.remove();overlay=null;drag=null;last='';requested='';requestedLanguage='';tokens=null;renderedGeneration=-1;generation++;
 }
 const kana=/[ぁ-ゖァ-ヺｦ-ﾟ]/u;
 const han=/[\p{Script=Han}々〆ヶ]/u;
@@ -133,7 +134,7 @@ function render(){
  const nextPlayer=document.querySelector('#movie_player');
  const nextSource=nextPlayer?.querySelector('.ytp-caption-window-container');
  if(enabled&&nextPlayer===player&&player&&!nextSource){holdMissing();return;}
- if(nextPlayer!==player||nextSource!==source){if(nextPlayer!==player){clear();playerSize.disconnect();if(nextPlayer)playerSize.observe(nextPlayer);}captions.disconnect();player=nextPlayer;source=nextSource;if(source){
+ if(nextPlayer!==player||nextSource!==source){if(nextPlayer!==player){clear();dragX=0;dragY=0;playerSize.disconnect();if(nextPlayer)playerSize.observe(nextPlayer);}captions.disconnect();player=nextPlayer;source=nextSource;if(source){
   captions.observe(source,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['style','class','hidden','lang']});
   // YouTube can toggle captions via an ancestor class without changing the text.
   for(let node=source.parentElement;node&&player.contains(node);node=node.parentElement)captions.observe(node,{attributes:true,attributeFilter:['style','class','hidden']});
@@ -172,7 +173,15 @@ function render(){
  if(!rects.length||!playerRect.width||!playerRect.height){clear();return;}
  const left=Math.min(...rects.map(r=>r.left)),top=Math.min(...rects.map(r=>r.top));
  const right=Math.max(...rects.map(r=>r.right));
- if(!overlay||!overlay.isConnected){last='';overlay=document.createElement('div');overlay.id='furipop-yt-caption-overlay';overlay.lang='ja';player.appendChild(overlay);}
+ if(!overlay||!overlay.isConnected){
+  last='';overlay=document.createElement('div');overlay.id='furipop-yt-caption-overlay';overlay.lang='ja';
+  overlay.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,dx:dragX,dy:dragY};overlay.setPointerCapture(e.pointerId);e.preventDefault();e.stopPropagation();});
+  overlay.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;dragX=drag.dx+e.clientX-drag.x;dragY=drag.dy+e.clientY-drag.y;schedule();e.preventDefault();e.stopPropagation();});
+  const endDrag=e=>{if(drag?.id!==e.pointerId)return;drag=null;e.stopPropagation();};
+  overlay.addEventListener('pointerup',endDrag);overlay.addEventListener('pointercancel',endDrag);
+  overlay.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
+  player.appendChild(overlay);
+ }
  let body=overlay.firstElementChild;
  if(!body){body=document.createElement('span');body.className='furipop-caption-text';overlay.replaceChildren(body);last='';renderedGeneration=-1;}
  if(!eligible){if(text!==last||body.querySelector('ruby'))body.textContent=text;last=text;renderedGeneration=-1;}
@@ -194,8 +203,8 @@ function render(){
  // horizontal space around the same centre to prevent needless line wraps.
  const width=Math.min((right-left)*1.2,playerRect.width);
  const center=(left+right)/2-playerRect.left;
- overlay.style.left=Math.max(0,Math.min(playerRect.width-width,center-width/2))+'px';
- overlay.style.top=Math.max(0,top-playerRect.top-(parseFloat(style.fontSize)||24)*0.3)+'px';
+ overlay.style.left=Math.max(0,Math.min(playerRect.width-width,center-width/2+dragX))+'px';
+ overlay.style.top=Math.max(0,Math.min(playerRect.height-overlay.offsetHeight,top-playerRect.top-(parseFloat(style.fontSize)||24)*0.3+dragY))+'px';
  overlay.style.width=width+'px';
  // Hide native captions only after the mirror exists, keeping fallback on failures.
  if(!player.classList.contains('furipop-yt-active'))player.classList.add('furipop-yt-active');
@@ -207,6 +216,6 @@ chrome.runtime.onMessage.addListener(m=>{if(m.type==='FURIPOP_TOGGLE')setEnabled
 observer.observe(document.documentElement,{childList:true,subtree:true});
 window.addEventListener('resize',schedule,{passive:true});
 document.addEventListener('fullscreenchange',schedule);
-document.addEventListener('yt-navigate-finish',()=>{clear();captions.disconnect();playerSize.disconnect();player=null;source=null;schedule();});
+document.addEventListener('yt-navigate-finish',()=>{clear();dragX=0;dragY=0;captions.disconnect();playerSize.disconnect();player=null;source=null;schedule();});
 schedule();
 })();
