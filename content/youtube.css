@@ -1,0 +1,16 @@
+/* The mirrored caption belongs to the extension, never to YouTube's React tree. */
+#movie_player.furipop-yt-active .ytp-caption-window-container {opacity:0 !important;}
+#furipop-yt-caption-overlay {
+ position:absolute;z-index:58;box-sizing:border-box;white-space:pre-wrap;
+ text-align:center;color:#fff;background:transparent;line-height:1.3;
+ pointer-events:none;overflow-wrap:anywhere;
+}
+
+/* Keep the native caption window available for YouTube's drag handling. */
+#movie_player.furipop-yt-active .ytp-caption-window-container .caption-window {pointer-events:auto;}
+#furipop-yt-caption-overlay .furipop-caption-text {line-height:1.3;box-decoration-break:clone;-webkit-box-decoration-break:clone;}
+#furipop-yt-caption-overlay ruby { ruby-position:over; }
+#furipop-yt-caption-overlay rt { font-size:.5em; line-height:1; color:#fff; background-color:rgba(0,0,0,.85); border-radius:.15em; box-shadow:0 0 0 1px rgba(0,0,0,.85); }
+
+/* Reserve the same initial baseline before ruby arrives. */
+#furipop-yt-caption-overlay .furipop-caption-text:not(:has(ruby)) { position:relative; top:.375em; }

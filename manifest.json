@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "FuriPop - X (Twitter) 日文假名懸停助手",
-  "version": "0.2.4",
-  "description": "專為 X (Twitter) 設計的日文讀音懸停助手。零破版、不跑版，滑鼠移到日文漢字上即刻浮出平假名。",
+  "name": "FuriPop - X 與 YouTube 日文假名助手",
+  "version": "0.3.6",
+  "description": "在 X 與 YouTube 懸停日文漢字查看讀音。",
   "permissions": [
     "storage",
     "offscreen"
   ],
   "host_permissions": [
     "https://x.com/*",
-    "https://twitter.com/*"
+    "https://twitter.com/*",
+    "https://www.youtube.com/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -39,6 +40,23 @@
         "content/language.js",
         "content/errors.js",
         "content/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "css": [
+        "content/content.css",
+        "content/youtube.css"
+      ],
+      "js": [
+        "vendor/tinyld/tinyld.light.js",
+        "content/language.js",
+        "content/errors.js",
+        "content/content.js",
+        "content/youtube.js"
       ],
       "run_at": "document_idle"
     }

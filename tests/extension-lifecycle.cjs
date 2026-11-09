@@ -8,6 +8,7 @@ const root=path.resolve(__dirname,'..');
 (async()=>{
  const work=path.join(root,'work');await fs.mkdir(work,{recursive:true});
  const profile=await fs.mkdtemp(path.join(work,'lifecycle-'));
+ try{
  const context=await chromium.launchPersistentContext(profile,{
   executablePath:process.env.EDGE_BINARY||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   headless:true,args:['--disable-extensions-except='+root,'--load-extension='+root],ignoreDefaultArgs:['--disable-extensions']
@@ -30,14 +31,20 @@ const root=path.resolve(__dirname,'..');
   await page.locator('#chinese').hover();await page.waitForTimeout(300);
   assert.equal(await page.locator('#furipop-tooltip').isVisible(),false);
   // Reload invalidates already-injected content scripts, even with a warm text cache.
+  // Register the listener before requesting a reload; the new worker may start immediately.
+  const readyWorker=context.waitForEvent('serviceworker',{timeout:15000});
   await worker.evaluate(()=>{setTimeout(()=>chrome.runtime.reload(),0);}).catch(()=>{});
   await page.waitForTimeout(700);
   await page.mouse.move(5,5);await page.locator('#word').hover();
   await page.waitForFunction(()=>{const t=document.querySelector('#furipop-tooltip');return t&&!t.hidden&&t.textContent.includes('請重新整理此 X 分頁');},{},{timeout:5000});
-  await page.reload();await expectReading();
+  // A page reloaded while the extension itself is still restarting may be
+  // created without registered content scripts. Wait for the new generation.
+  await readyWorker;
+  await page.reload();await page.mouse.move(5,5);await expectReading();
   await page.evaluate(()=>{const r=document.createRange();r.selectNodeContents(document.querySelector('article'));getSelection().removeAllRanges();getSelection().addRange(r);});
   await page.waitForFunction(()=>{const t=document.querySelector('#furipop-tooltip');return t&&!t.hidden&&t.textContent.startsWith('すなおになれないせんぱい');},{},{timeout:5000});
   assert.deepEqual(pageErrors,[]);
   console.log('PASS: screenshot sentence, mixed Chinese with Japanese quote under missing/ja/zh labels, Chinese suppression, extension reload with cached text, actionable stale-page message, F5 recovery and full-sentence selection');
  }finally{await context.close();}
+ }finally{await fs.rm(profile,{recursive:true,force:true,maxRetries:3});}
 })().catch(e=>{console.error(e);process.exitCode=1;});

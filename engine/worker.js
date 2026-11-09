@@ -3,7 +3,7 @@ let ready;
 const cache=new Map();
 const han=/[\p{Script=Han}々〆ヶ]/u;
 // Only curated proper nouns/slang override contextual dictionary readings.
-const overrides=Object.fromEntries(Object.entries(self.FURIPOP_OVERRIDES).filter(([s])=>['野獣先輩','野獸先輩','神絵師','神畫師','絵師','畫師','画師','鍵垢','本垢','裏垢','推し','神回','學校','應援','發售','預約'].includes(s)));
+const overrides=Object.fromEntries(Object.entries(self.FURIPOP_OVERRIDES).filter(([s])=>['一回','野獣先輩','野獸先輩','神絵師','神畫師','絵師','畫師','画師','鍵垢','本垢','裏垢','推し','神回','學校','應援','發售','預約'].includes(s)));
 let activeOverrides=overrides;
 let keys=Object.keys(overrides).sort((a,b)=>b.length-a.length);
 let dictionaryKey='[]';

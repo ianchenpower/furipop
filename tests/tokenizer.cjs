@@ -21,6 +21,7 @@ vm.runInContext(fs.readFileSync(path.join(root,'engine/worker.js'),'utf8'),conte
 const samples=[
  ['今日は図書館で新しい本を読みました。','きょうはとしょかんであたらしいほんをよみました。'],
  ['食べる、食べた、走っています。','たべる、たべた、はしっています。'],
+ ['一日に一回読む','いちにちにいっかいよむ'],
  ['野獸先輩と神絵師の配信を見る。','やじゅうせんぱいとかみえしのはいしんをみる。'],
  ['𠮷野家で勉強📚 日本語を話します。',null],
  ['  今日\n学校へ行く！','  きょう\nがっこうへいく！'],
@@ -36,7 +37,7 @@ const samples=[
   for(const t of tokens)assert.equal(text.slice(t.start,t.end),t.surface);
   if(reading)assert.equal(tokens.map(t=>t.reading||t.surface).join(''),reading);
  }
- assert.ok(messages[5].tokens.every(t=>t.unknown));
+ assert.ok(messages[6].tokens.every(t=>t.unknown));
  // Repeat exercises the cache and preserves offset-bearing results.
  context.onmessage({data:{id:99,text:samples[0][0]}});
  await vm.runInContext('queue',context);

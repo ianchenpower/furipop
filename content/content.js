@@ -1,15 +1,37 @@
 /* FuriPop 0.2: read text and anchor ranges; never rewrite React-owned nodes. */
 (()=>{
 'use strict';
-let enabled=false, tip, epoch=0, timer, lastKey='', dictionaryVersion=0, customWords=[];
+let enabled=false, tip, epoch=0, timer, lastKey='', dictionaryVersion=0, customWords=[], active=null;
 const {isJapanese,glyphBounds}=FuriPopLanguage;
 const han=/[\p{Script=Han}々〆ヶ]/u;
 const blocked='a,button,input,textarea,select,[contenteditable]:not([contenteditable="false"])';
+const youtubeSelector='ytd-watch-metadata h1, ytd-watch-flexy #description-inline-expander, ytd-watch-flexy #description, ytd-comment-thread-renderer #content-text, ytd-comment-view-model #content-text, ytd-comment-renderer #content-text, ytd-video-renderer #video-title, ytd-rich-item-renderer #video-title';
+const contentSelector='[data-testid="tweetText"],[data-testid="UserDescription"],[data-testid="User-Name"],[data-testid="UserName"],'+youtubeSelector;
 const cache=new Map(), pending=new Map();
-function hide(){epoch++;lastKey='';if(tip)tip.hidden=true;}
+const anchorObserver=new MutationObserver(mutations=>{
+ if(!active)return;
+ const container=active.container;
+ const changed=mutations.some(m=>{
+  if(m.target===tip||tip?.contains(m.target))return false;
+  if(m.type==='attributes')return true;
+  if(!container.contains(m.target))return false;
+  if(m.type==='childList'&&[...m.addedNodes,...m.removedNodes].every(n=>n===tip))return false;
+  return true;
+ });
+ if(!container.isConnected||changed)hide();
+});
+function hide(){epoch++;lastKey='';active=null;anchorObserver.disconnect();if(tip)tip.hidden=true;}
+function watchAnchor(container,range,mode){
+ anchorObserver.disconnect();active={container,range,mode};
+ anchorObserver.observe(container,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['lang']});
+ // Watch only the active container and its ancestors, including its removal.
+ for(let parent=container.parentNode;parent;parent=parent.parentNode){anchorObserver.observe(parent,{childList:true,attributes:true,attributeFilter:['lang']});}
+}
 function show(text,rect){
  if(!enabled || !rect || (!rect.width&&!rect.height))return;
- if(!tip){tip=document.createElement('div');tip.id='furipop-tooltip';tip.setAttribute('role','tooltip');document.documentElement.append(tip);}
+ if(!tip){tip=document.createElement('div');tip.id='furipop-tooltip';tip.setAttribute('role','tooltip');}
+ const tooltipRoot=document.fullscreenElement||document.documentElement;
+ if(tip.parentNode!==tooltipRoot)tooltipRoot.append(tip);
  tip.textContent=text;tip.hidden=false;
  tip.style.left='8px';tip.style.top='8px';
  const b=tip.getBoundingClientRect();
@@ -45,14 +67,23 @@ function hasCustom(text){return customWords.some(word=>text.includes(word));}
 function context(node){
  const parent=node.parentElement;
  const name=parent?.closest('[data-testid="User-Name"],[data-testid="UserName"]');
- const container=name?(parent.closest('a')||name):parent?.closest('[data-testid="tweetText"],[data-testid="UserDescription"]');
+ const container=name?(parent.closest('a')||name):parent?.closest(contentSelector);
+ const allowLink=!!name || (location.hostname==='www.youtube.com' && !!container);
  // Display names are links on X. Reading them must preserve their navigation.
- if(!container || parent.closest(name?blocked.replace('a,',''):blocked))return null;
- const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT);const nodes=[];let text='',n;
- while(n=walker.nextNode()){
-  if(n.parentElement.closest('script,style,[contenteditable="true"]'))continue;
-  nodes.push({node:n,start:text.length,end:text.length+n.length});text+=n.data;
+ if(!container || parent.closest(allowLink?blocked.replace('a,',''):blocked))return null;
+ const nodes=[];let text='';
+ function separator(){if(text&&!text.endsWith('\n'))text+='\n';}
+ function collect(n){
+  if(n.nodeType===Node.TEXT_NODE){nodes.push({node:n,start:text.length,end:text.length+n.length});text+=n.data;return;}
+  if(n.nodeType!==Node.ELEMENT_NODE||n.matches('script,style,[contenteditable="true"]'))return;
+  if(n.tagName==='BR'){text+='\n';return;}
+  if(n.tagName==='IMG'){text+=n.getAttribute('alt')||'\uFFFC';return;}
+  const block=n!==container&&['DIV','P','LI','BLOCKQUOTE','PRE'].includes(n.tagName);
+  if(block)separator();
+  for(const child of n.childNodes)collect(child);
+  if(block)separator();
  }
+ collect(container);
  if(text.length>2000)return null;
  return {text,nodes,container,language:localLanguage(parent,name||container),part:nodes.find(p=>p.node===node)};
 }
@@ -78,14 +109,15 @@ async function hover(x,y){
  const key=ctx.text+'|'+(ctx.part.start+offset);
  if(key===lastKey && tip&&!tip.hidden)return;
  hide();lastKey=key;const request=epoch;
+ watchAnchor(ctx.container,probe,'hover');
  const loadingTimer=setTimeout(()=>{if(request===epoch)show('正在載入本機日文詞典…',probe.getBoundingClientRect());},250);
  try{
   const tokens=await analyze(ctx.text);
   if(request!==epoch||!enabled||!p.node.isConnected||context(p.node)?.text!==ctx.text||context(p.node)?.language!==ctx.language)return;
   const token=tokens.find(t=>t.start<=ctx.part.start+offset&&t.end>ctx.part.start+offset);
-  if(!token || !han.test(token.surface) || (!japanese&&!customWords.includes(token.surface))){if(tip)tip.hidden=true;return;}
+  if(!token || !han.test(token.surface) || (!japanese&&!customWords.includes(token.surface))){hide();return;}
   const range=tokenRange(ctx,token),rect=range&&hitRect(range,x,y);
-  if(rect)show(token.reading||'尚無可靠讀音：'+token.surface,rect);
+  if(rect){active.range=range;show(token.reading||'尚無可靠讀音：'+token.surface,rect);}else hide();
  }catch(e){if(request===epoch)showError(e,probe.getBoundingClientRect());}
  finally{clearTimeout(loadingTimer);}
 }
@@ -98,18 +130,23 @@ async function selection(){
  const range=s.getRangeAt(0).cloneRange(),rect=range.getBoundingClientRect();
  const common=range.commonAncestorContainer;
  const selectedContainer=common.nodeType===Node.ELEMENT_NODE?common:common.parentElement;
- const scope=selectedContainer?.closest('[data-testid="tweetText"],[data-testid="UserDescription"],[data-testid="User-Name"],[data-testid="UserName"]');
+ const scope=selectedContainer?.closest(contentSelector);
  const japanese=isJapanese(scope?.textContent||text,localLanguage(selectedContainer,scope||selectedContainer));
  if(!japanese&&!hasCustom(text))return;
  if(text.length>2000){show('請選取 2000 字以內的文字',rect);return;}
- const request=epoch;show('正在分析讀音…',rect);
+ const request=epoch;watchAnchor(scope||selectedContainer,range,'selection');show('正在分析讀音…',rect);
  try{const tokens=await analyze(text);if(request!==epoch||!enabled||window.getSelection()?.toString().trim()!==text)return;
  const reading=tokens.map(t=>(japanese||customWords.includes(t.surface))?(t.reading||t.surface):t.surface).join('');
  const unknown=japanese&&tokens.some(t=>t.unknown);
  show(reading+(unknown?'（部分詞彙無可靠讀音，保留原文）':''),rect);
  }catch(e){if(request===epoch)showError(e,rect);}
 }
-document.addEventListener('pointermove',e=>{clearTimeout(timer);if(!enabled)return;hide();timer=setTimeout(()=>hover(e.clientX,e.clientY),100);},{passive:true});
+document.addEventListener('pointermove',e=>{
+ if(!enabled||window.getSelection()?.toString().trim())return;
+ clearTimeout(timer);
+ if(active?.mode==='hover'&&active.container.isConnected&&hitRect(active.range,e.clientX,e.clientY))return;
+ hide();timer=setTimeout(()=>hover(e.clientX,e.clientY),100);
+},{passive:true});
 document.addEventListener('selectionchange',()=>{clearTimeout(timer);hide();timer=setTimeout(selection,180);});
 document.addEventListener('pointerdown',()=>{clearTimeout(timer);hide();});
 document.addEventListener('pointerout',e=>{if(!e.relatedTarget){clearTimeout(timer);hide();}});
