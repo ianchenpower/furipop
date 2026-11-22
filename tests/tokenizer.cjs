@@ -54,6 +54,12 @@ const samples=[
  context.onmessage({data:{id:102,text:'星街すいせいを見る',dictionary:[]}});
  await vm.runInContext('queue',context);
  assert.equal(messages.at(-1).tokens[0].reading,'ほしまちすいせい','deleting custom reading restores built-in reading');
+ context.onmessage({data:{id:103,text:'𠮷田さん',dictionary:[{word:'𠮷田',reading:'よした'}]}});
+ await vm.runInContext('queue',context);
+ const surname=messages.at(-1).tokens[0];
+ assert.equal(surname.reading,'よした');
+ assert.equal(surname.surface,'𠮷田');
+ assert.equal(surname.end,3);
  assert.throws(()=>context.FuriPopDictionary.normalize([{word:'名前',reading:'abc'}]));
  assert.throws(()=>context.FuriPopDictionary.normalize([{word:'名前',reading:'なまえ'},{word:'名前',reading:'めい'}]));
  assert.throws(()=>context.FuriPopDictionary.normalize(Array.from({length:101},(_,i)=>({word:'名'+i,reading:'な'}))));

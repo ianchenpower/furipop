@@ -2,7 +2,7 @@
 (()=>{
 'use strict';
 let enabled=false,player=null,source=null,overlay=null,frame=0,last='',requested='',requestedLanguage='',tokens=null,generation=0,renderedGeneration=-1,analysisTimer=0,analysisMaxTimer=0,analysisEpoch=0,acceptedRequest=0,fallbackTimer=0,fallbackText='',missingTimer=0;
-let dragX=0,dragY=0,drag=null;
+let dragX=0,dragY=0,drag=null,captionPoll=0;
 const observer=new MutationObserver(()=>{
  // Once bound, caption changes are handled by the local observer, so ordinary
  // comments and recommendation churn need no repeated player work.
@@ -11,6 +11,7 @@ const observer=new MutationObserver(()=>{
 const captions=new MutationObserver(schedule);
 const playerSize=new ResizeObserver(schedule);
 function clear(){
+ if(captionPoll){clearInterval(captionPoll);captionPoll=0;}
  if(missingTimer){clearTimeout(missingTimer);missingTimer=0;}
  if(fallbackTimer){clearTimeout(fallbackTimer);fallbackTimer=0;}fallbackText='';
  if(analysisTimer){clearTimeout(analysisTimer);analysisTimer=0;}
@@ -81,7 +82,12 @@ function dispatchReading(){
    analyzed.push({surface:requested.slice(end),start:end,end:requested.length,reading:null});
   }
   acceptedRequest=id;tokens=analyzed;renderedGeneration=-1;
-  if(!tokens.some(t=>t.reading&&han.test(t.surface))){if(requested===text)clear();return;}
+  if(!tokens.some(t=>t.reading&&han.test(t.surface))){
+   // The player can advance before our scheduled render updates requested.
+   if(requested===text&&captionText()===text)clear();
+   else schedule();
+   return;
+  }
   schedule();
   }).catch(error=>{if(epoch===analysisEpoch&&id===generation){clear();console.warn('[FuriPop] YouTube caption reading:',error?.message||error);}});
 }
@@ -125,6 +131,38 @@ function holdMissing(){
 }
 function cancelMissing(){if(missingTimer){clearTimeout(missingTimer);missingTimer=0;}}
 function visible(el){const style=getComputedStyle(el);return style.display!=='none'&&style.visibility!=='hidden'&&el.getClientRects().length>0;}
+// Roll-up captions keep older lines in the DOM and translate them outside a
+// clipped caption window. getClientRects alone still reports those lines.
+function captionVisible(el){
+ if(!visible(el))return false;
+ const window=el.closest('.caption-window');
+ if(!window||!/(hidden|clip|scroll|auto)/.test(getComputedStyle(window).overflowY))return true;
+ const bounds=window.getBoundingClientRect(),rect=el.getBoundingClientRect();
+ if(!bounds.height||!rect.height)return true;
+ return rect.bottom>bounds.top&&rect.top<bounds.bottom;
+}
+function firstTextTop(root){
+ const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+ for(let node=walker.nextNode();node;node=walker.nextNode()){
+  if(node.parentElement?.tagName==='RT')continue;
+  const idx=node.data.search(/\S/);
+  if(idx<0)continue;
+  const range=document.createRange();range.setStart(node,idx);range.setEnd(node,idx+1);
+  const rect=range.getBoundingClientRect();
+  if(rect.height)return rect.top;
+ }
+ return null;
+}
+function captionParts(){const lines=Array.from(source.querySelectorAll('.caption-visual-line')).filter(captionVisible);const segments=Array.from(source.querySelectorAll('.ytp-caption-segment')).filter(captionVisible);return {lines,segments,text:(lines.length?lines.map(line=>line.textContent||'').join('\n'):segments.map(s=>s.textContent||'').join('')).trim()};}
+function captionText(){return captionParts().text;}
+function checkCaption(){
+ if(document.hidden||!enabled||!overlay?.isConnected)return;
+ if(!player?.isConnected||!source?.isConnected||!visible(source)||captionText()!==last||(source.getAttribute('lang')||'')!==requestedLanguage||Array.from(source.querySelectorAll('.caption-window')).filter(visible).length>1){
+  // The recovery timer must also work when a scheduled animation frame stalls.
+  if(frame)cancelAnimationFrame(frame);
+  refresh();
+ }
+}
 function schedule(){if(!frame)frame=requestAnimationFrame(refresh);}
 function refresh(){
  frame=0;
@@ -143,9 +181,7 @@ function render(){
  // Distinct caption windows can be positioned independently. Until each can
  // be mirrored separately, keep YouTube's original positioning intact.
  if(Array.from(source.querySelectorAll('.caption-window')).filter(visible).length>1){clear();return;}
- const segments=Array.from(source.querySelectorAll('.ytp-caption-segment')).filter(visible);
- const lines=Array.from(source.querySelectorAll('.caption-visual-line')).filter(visible);
- const text=(lines.length?lines.map(line=>line.textContent||'').join('\n'):segments.map(s=>s.textContent||'').join('')).trim();
+ const {segments,text}=captionParts();
  if(!text){holdMissing();return;}
  if(text.length>2000){clear();return;}
  cancelMissing();
@@ -181,13 +217,19 @@ function render(){
   overlay.addEventListener('pointerup',endDrag);overlay.addEventListener('pointercancel',endDrag);
   overlay.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
   player.appendChild(overlay);
+  // A missed platform notification must not leave old text on screen.
+  if(!captionPoll)captionPoll=setInterval(checkCaption,100);
  }
  let body=overlay.firstElementChild;
  if(!body){body=document.createElement('span');body.className='furipop-caption-text';overlay.replaceChildren(body);last='';renderedGeneration=-1;}
  if(!eligible){if(text!==last||body.querySelector('ruby'))body.textContent=text;last=text;renderedGeneration=-1;}
  else if(languageChanged){body.textContent=text;last=text;renderedGeneration=-1;}
  else if(text!==last){updateText(body,last,text);last=text;renderedGeneration=-1;}
- if(tokens&&renderedGeneration!==generation){reconcileRuby(body,tokens);renderedGeneration=generation;}
+ if(tokens&&renderedGeneration!==generation){
+  // Analysis may decorate the current caption, but cannot replace its text.
+  if(tokens.map(item=>item.surface).join('')===text)reconcileRuby(body,tokens);
+  renderedGeneration=generation;
+ }
  const style=getComputedStyle(segments[0]);
  overlay.style.fontFamily=style.fontFamily;overlay.style.fontSize=style.fontSize;overlay.style.fontWeight=style.fontWeight;
  overlay.style.fontStyle=style.fontStyle;overlay.style.letterSpacing=style.letterSpacing;
@@ -203,9 +245,14 @@ function render(){
  // horizontal space around the same centre to prevent needless line wraps.
  const width=Math.min((right-left)*1.2,playerRect.width);
  const center=(left+right)/2-playerRect.left;
- overlay.style.left=Math.max(0,Math.min(playerRect.width-width,center-width/2+dragX))+'px';
- overlay.style.top=Math.max(0,Math.min(playerRect.height-overlay.offsetHeight,top-playerRect.top-(parseFloat(style.fontSize)||24)*0.3+dragY))+'px';
  overlay.style.width=width+'px';
+ overlay.style.left=Math.max(0,Math.min(playerRect.width-width,center-width/2+dragX))+'px';
+ let nativeTop=null;
+ for(const segment of segments){nativeTop=firstTextTop(segment);if(nativeTop!==null)break;}
+ if(nativeTop===null)nativeTop=top;
+ const baseTop=firstTextTop(body);
+ const baseOffset=baseTop!==null?baseTop-overlay.getBoundingClientRect().top:(parseFloat(style.fontSize)||24)*0.3;
+ overlay.style.top=Math.max(0,Math.min(playerRect.height-overlay.offsetHeight,nativeTop-playerRect.top-baseOffset+dragY))+'px';
  // Hide native captions only after the mirror exists, keeping fallback on failures.
  if(!player.classList.contains('furipop-yt-active'))player.classList.add('furipop-yt-active');
 }
@@ -216,6 +263,7 @@ chrome.runtime.onMessage.addListener(m=>{if(m.type==='FURIPOP_TOGGLE')setEnabled
 observer.observe(document.documentElement,{childList:true,subtree:true});
 window.addEventListener('resize',schedule,{passive:true});
 document.addEventListener('fullscreenchange',schedule);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
 document.addEventListener('yt-navigate-finish',()=>{clear();dragX=0;dragY=0;captions.disconnect();playerSize.disconnect();player=null;source=null;schedule();});
 schedule();
 })();

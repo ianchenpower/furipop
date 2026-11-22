@@ -64,6 +64,14 @@ function localLanguage(element,container){
  return tagged && tagged!==document.documentElement && tagged!==document.body && (container.contains(tagged)||tagged===container)?tagged.lang:'';
 }
 function hasCustom(text){return customWords.some(word=>text.includes(word));}
+function japaneseQuoteAt(ctx,offset){
+ if(!ctx.container.matches('[data-testid="tweetText"]'))return null;
+ for(const match of ctx.text.matchAll(/「([^「」\r\n]{1,300})」|『([^『』\r\n]{1,300})』/gu)){
+  const text=match[1]||match[2],start=match.index+1;
+  if(offset>=start&&offset<start+text.length&&/[ぁ-ゖァ-ヺ]/u.test(text)&&isJapanese(text))return {text,start};
+ }
+ return null;
+}
 function context(node){
  const parent=node.parentElement;
  const name=parent?.closest('[data-testid="User-Name"],[data-testid="UserName"]');
@@ -97,7 +105,6 @@ async function hover(x,y){
  const p=caret(x,y);if(!p || p.node.nodeType!==Node.TEXT_NODE){hide();return;}
  const ctx=context(p.node);if(!ctx?.part || !han.test(ctx.text)){hide();return;}
  const japanese=isJapanese(ctx.text,ctx.language);
- if(!japanese&&!hasCustom(ctx.text)){hide();return;}
  // A caret may be returned for nearby whitespace; require the pointer to hit a glyph.
  const probe=document.createRange();let bounds=glyphBounds(p.node.data,p.offset);
  if(!bounds){hide();return;}
@@ -106,17 +113,21 @@ async function hover(x,y){
  if(!hitRect(probe,x,y)&&p.offset>0){bounds=glyphBounds(p.node.data,p.offset-1);probe.setStart(p.node,bounds.start);probe.setEnd(p.node,bounds.end);}
  const offset=bounds.start;
  if(!hitRect(probe,x,y)){hide();return;}
+ const absoluteOffset=ctx.part.start+offset;
+ const quote=japanese?null:japaneseQuoteAt(ctx,absoluteOffset);
+ if(!japanese&&!quote&&!hasCustom(ctx.text)){hide();return;}
  const key=ctx.text+'|'+(ctx.part.start+offset);
  if(key===lastKey && tip&&!tip.hidden)return;
  hide();lastKey=key;const request=epoch;
  watchAnchor(ctx.container,probe,'hover');
  const loadingTimer=setTimeout(()=>{if(request===epoch)show('正在載入本機日文詞典…',probe.getBoundingClientRect());},250);
  try{
-  const tokens=await analyze(ctx.text);
+  const tokens=await analyze(quote?.text||ctx.text);
   if(request!==epoch||!enabled||!p.node.isConnected||context(p.node)?.text!==ctx.text||context(p.node)?.language!==ctx.language)return;
-  const token=tokens.find(t=>t.start<=ctx.part.start+offset&&t.end>ctx.part.start+offset);
-  if(!token || !han.test(token.surface) || (!japanese&&!customWords.includes(token.surface))){hide();return;}
-  const range=tokenRange(ctx,token),rect=range&&hitRect(range,x,y);
+  const base=quote?.start||0;
+  const token=tokens.find(t=>t.start+base<=absoluteOffset&&t.end+base>absoluteOffset);
+  if(!token || !han.test(token.surface) || (!japanese&&!quote&&!customWords.includes(token.surface))){hide();return;}
+  const range=tokenRange(ctx,{start:token.start+base,end:token.end+base}),rect=range&&hitRect(range,x,y);
   if(rect){active.range=range;show(token.reading||'尚無可靠讀音：'+token.surface,rect);}else hide();
  }catch(e){if(request===epoch)showError(e,probe.getBoundingClientRect());}
  finally{clearTimeout(loadingTimer);}

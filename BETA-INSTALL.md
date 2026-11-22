@@ -1,13 +1,13 @@
-# FuriPop v0.3.7 封閉 Beta 安裝與回報
+# FuriPop v0.3.8 封閉 Beta 安裝與回報
 
-FuriPop 是測試中的桌面瀏覽器擴充功能。請只從專案維護者提供的 GitHub 發布頁下載 `furipop-0.3.7-*.zip`，不要下載或分享開發目錄中的 `work/`。
+FuriPop 是測試中的桌面瀏覽器擴充功能。請只從專案維護者提供的 GitHub 發布頁下載 `furipop-0.3.8-*.zip`，不要下載或分享開發目錄中的 `work/`。
 
 ## 首次安裝
 
 1. 下載 Beta ZIP，解壓縮至固定資料夾，例如「文件/FuriPop」。安裝後請保留該資料夾。
 2. 檢查資料夾內直接有 `manifest.json`，並有 `content`、`engine` 等資料夾。若還有一層資料夾，請選擇包含 `manifest.json` 的那一層。
 3. 在 Chrome 116 以上版本網址列輸入 `chrome://extensions`，開啟「開發人員模式」。
-4. 點「載入未封裝項目」，選取包含 `manifest.json` 的資料夾，確認顯示 FuriPop 與版本 0.3.7。可透過擴充功能選單將其釘選。
+4. 點「載入未封裝項目」，選取包含 `manifest.json` 的資料夾，確認顯示 FuriPop 與版本 0.3.8。可透過擴充功能選單將其釘選。
 5. 重新整理已開啟的 X／YouTube 頁面。X 日文漢字可懸停，反白文字可顯示整段讀音。YouTube 標題、資訊欄、留言可懸停；觀看影片時須自行開啟可用的日文 CC，才會嘗試顯示字幕讀音。
 
 ## 更新與解除安裝

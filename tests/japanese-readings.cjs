@@ -15,7 +15,20 @@ const examples=[["今日は図書館で本を読みました。","きょうは�
 ["今日はライブ配信を見る，明日はアーカイブを見る。","きょうはライブはいしんをみる，あしたはアーカイブをみる。"],
 ["麤龘靐","麤龘靐"]];
 (async()=>{
+ examples.unshift(['髙橋さん、山﨑さん、𠮷田さん。','たかはしさん、やまざきさん、よしださん。']);
+ examples.unshift(['空の瓶を洗う。空を見上げる。','からのびんをあらう。そらをみあげる。']);
+ examples.unshift(['水を一口だけ飲む。寄付は一口千円です。','みずをひとくちだけのむ。きふはいちくちせんえんです。']);
+ examples.unshift(['市場で魚を買う。株式市場で株を買う。','いちばでさかなをかう。かぶしきしじょうでかぶをかう。']);
+ examples.unshift(['人気のない路地を歩く。人気のない商品。','ひとけのないろじをあるく。にんきのないしょうひん。']);
+ examples.unshift(['獣の足跡を見る。野獣を見た。','けもののあしあとをみる。やじゅうをみた。']);
+ examples.unshift(['三日で読む。二月三日に会う。十三日に帰る。三日月を見る。','みっかでよむ。にがつみっかにあう。じゅうさんにちにかえる。みかづきをみる。']);
+ examples.unshift(['町工場で働く。工場で作る。','まちこうばではたらく。こうじょうでつくる。']);
  examples.unshift(['私に蠢く獣','わたしにうごめくけもの']);
+ examples.unshift(['今日は私の友達二人に来てもらいました。','きょうはわたしのともだちふたりにきてもらいました。']);
+ examples.unshift(['1人で、2人に。','ひとりで、ふたりに。']);
+ examples.unshift(['自分の顔を鏡で見て。','じぶんのかおをかがみでみて。']);
+ examples.unshift(['自分の顔鏡で見て。','じぶんのかおかがみでみて。']);
+ examples.unshift(['視聴者の方から。','しちょうしゃのかたから。']);
  for(const [id,[text]] of examples.entries())ctx.onmessage({data:{id,text}});
  await vm.runInContext('queue',ctx);assert.equal(responses.length,examples.length);
  for(const {id,tokens,error} of responses){assert.ok(!error,error);const [text,expected]=examples[id];assert.equal(tokens.map(t=>t.surface).join(''),text);assert.equal(tokens.map(t=>t.reading||t.surface).join(''),expected,text);for(const t of tokens)assert.equal(text.slice(t.start,t.end),t.surface);}

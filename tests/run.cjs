@@ -4,7 +4,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),vm=require('node:
 const {createRequire}=require('node:module');
 const root=path.resolve(__dirname,'..');
 const core=['japanese-readings.cjs','tokenizer.cjs','language.cjs','offscreen.cjs','options.cjs','popup.cjs','language-corpus.cjs','tokenizer-properties.cjs','offscreen-properties.cjs'];
-const browser=['extension-lifecycle.cjs','content-interaction.cjs','worker-recovery.cjs','browser-matrix.cjs','youtube.cjs','youtube-flicker.cjs','youtube-alignment.cjs'];
+const browser=['extension-lifecycle.cjs','content-interaction.cjs','worker-recovery.cjs','browser-matrix.cjs','youtube.cjs','youtube-flicker.cjs','youtube-alignment.cjs','youtube-missed-mutation.cjs'];
 (async()=>{
  const args=process.argv.slice(2);
  if(args.some(a=>!['--all','--browser'].includes(a)))throw new Error('Usage: node tests/run.cjs [--all|--browser]');

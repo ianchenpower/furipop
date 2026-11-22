@@ -52,6 +52,19 @@ const root=path.resolve(__dirname,'..');
  await page.locator('#heading-word').hover({position:{x:5,y:12}});
  await page.waitForFunction(()=>{const t=document.querySelector('#furipop-tooltip');return t&&!t.hidden&&t.textContent==='こうこう';},{},{timeout:5000});
  const heading=await tip.textContent()==='こうこう';
+ await page.evaluate(()=>{
+  const article=document.createElement('article');
+  article.dataset.testid='tweetText';article.lang='zh-TW';
+  article.innerHTML='<span id="zh-context">今天在學校看到這句話：</span>「明日、<span id="ja-quote">図書館</span>に行きます。」';
+  document.body.prepend(article);
+ });
+ await page.locator('#ja-quote').hover({position:{x:5,y:12}});
+ await page.waitForFunction(()=>{const t=document.querySelector('#furipop-tooltip');return t&&!t.hidden&&t.textContent==='としょかん';},{},{timeout:5000}).catch(async error=>{
+  throw new Error('Japanese quote hover: '+JSON.stringify(await tip.evaluate(t=>({hidden:t.hidden,text:t.textContent}))),{cause:error});
+ });
+ await page.locator('#zh-context').hover();
+ await page.waitForTimeout(400);
+ assert.equal(await tip.isVisible(),false,'the Chinese context outside the quote stays plain');
  const checks={japaneseHeadingInBlock:heading,emojiSeparatesWords:emojiBoundary,blocksSeparateWords:blockBoundary,sameWordStable:stable,selectionStable,longSelectionAccessible:longAccessible,domChangeClearsOldReading:invalidated,lineBreakSeparatesWords:boundary,inlineSpansStillJoin:inline,removedAnchorClears:removed};
  console.log(JSON.stringify(checks));assert.ok(Object.values(checks).every(Boolean));assert.deepEqual(errors,[]);console.log('PASS: interaction regressions');
  }finally{await browser.close();}
