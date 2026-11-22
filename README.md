@@ -226,14 +226,3 @@ furipop/
 - [x] **Popup 開關即時聯動**：開關切換即刻套用至當前分頁，無需重新整理。
 
 ---
-
-
-
-## ⚠️ 已知技術地雷與踩坑紀錄 (Gotchas & Warnings)
-
-1. **推特 SPA 虛擬 DOM**：
-   - 遍歷推文子節點時，必須先 `walk(child)` 完成替換，再給父容器加上 `data-furipop-done="true"` 標記。若順序顛倒會導致遍歷中斷。
-2. **文字節點抽換**：
-   - 遇到 `<a>`（推特 Hashtag、Mention、短網址）與 Emoji 節點時，必須略過或保護，避免推特點擊連結失效。
-3. **Chrome 擴充功能重新載入機制**：
-   - 修改 `manifest.json` 或 `content.js` 後，必須在 `chrome://extensions/` 點擊重新整理按鈕，並在推特頁面按 `F5` 才能看到最新代碼效果。
